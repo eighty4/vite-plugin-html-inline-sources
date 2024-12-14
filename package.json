@@ -10,6 +10,8 @@
     "css",
     "svg"
   ],
+  "homepage": "https://www.npmjs.com/package/vite-plugin-html-inline-sources",
+  "repository": "https://github.com/eighty4/vite-plugin-html-inline-sources",
   "author": "Adam McKee <adam.be.g84d@gmail.com>",
   "license": "BSD-2-Clause",
   "type": "module",
@@ -23,6 +25,7 @@
   },
   "packageManager": "pnpm@9.15.0",
   "dependencies": {
+    "esbuild": "^0.24.0",
     "magic-string": "^0.30.15",
     "parse5": "^7.2.1"
   },

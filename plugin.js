@@ -1,5 +1,6 @@
 import {readFile} from 'node:fs/promises'
 import {join as joinPath} from 'node:path'
+import {transform as esbuildTransform} from 'esbuild'
 import MagicString from 'magic-string'
 import {defaultTreeAdapter, html, parse, serialize} from 'parse5'
 
@@ -13,11 +14,7 @@ export default function htmlInlineSources() {
         name: 'vite-plugin-html-inline-sources',
         async transform(src, id) {
             if (id.endsWith('.html')) {
-                const doc = parse(src, {
-                    scriptingEnabled: false,
-                    sourceCodeLocationInfo: true,
-                    onParseError,
-                })
+                const doc = parseHtmlDocument(src)
                 const ctx = {
                     html: new MagicString(src),
                     root: id.substring(0, id.lastIndexOf('/')),
@@ -30,16 +27,32 @@ export default function htmlInlineSources() {
     }
 }
 
+function parseHtmlDocument(html) {
+    try {
+        return parse(html, {
+            scriptingEnabled: false,
+            sourceCodeLocationInfo: true,
+            onParseError,
+        })
+    } catch (e) {
+        throw new Error('parse5 HTML error: ' + e.code)
+    }
+}
+
 /**
  * @param {import('parse5').ParserError} err
  */
 function onParseError(err) {
     switch (err.code) {
         case 'missing-doctype':
+        case 'abandoned-head-element-child':
+        case 'duplicate-attribute':
+        case 'non-void-html-element-start-tag-with-trailing-solidus':
+        case 'unexpected-question-mark-instead-of-tag-name':
             return
     }
-    console.error(err)
-    throw Error('wtf')
+    // todo map source location to code
+    throw err
 }
 
 /**
@@ -80,6 +93,9 @@ async function transform(node, ctx) {
 async function transformScript(node, ctx) {
     let ignored = false
     let inline = false
+    /**
+     * @type {null|string}
+     */
     let src = null
     let unsupportable = false
     for (const attr of node.attrs) {
@@ -100,15 +116,19 @@ async function transformScript(node, ctx) {
     if (ignored || !inline) {
         return false
     } else if (unsupportable) {
-        throw new Error(`${unsupportable} attribute not supported with vite-inline`)
+        throw new Error(`<script vite-inline> does not work with ${unsupportable} attribute (and only supports the src attribute)`)
     } else if (src === null) {
-        throw new Error('vite-inline script does not have a src attr')
-    } else if (src.endsWith('.ts')) {
-        throw new Error('vite-inline script does not yet support typescript')
+        throw new Error('<script vite-inline> is missing src attribute')
     } else if (src.startsWith('http')) {
-        throw new Error('vite-inline script src must be a relative path')
+        throw new Error(`<script vite-inline> muse use a relative filesystem src path (network paths like ${src} are unsupported)`)
     } else {
-        const scriptContent = (await readFile(joinPath(ctx.root, src))).toString().trim()
+        const filename = src.substring(src.lastIndexOf('/'))
+        const extension = filename.substring(filename.lastIndexOf('.') + 1)
+        if (!['js', 'mjs', 'ts'].includes(extension)) {
+            throw new Error(`<script vite-inline> does not support src extension .${extension}`)
+        }
+        const sourceContent = await readFileContent(ctx, src)
+        const scriptContent = extension === 'ts' ? await processTypeScript(src, sourceContent) : sourceContent
         const documentFragment = defaultTreeAdapter.createDocumentFragment()
         const scriptElement = defaultTreeAdapter.createElement('script', html.NS.HTML, [])
         const textNode = defaultTreeAdapter.createTextNode(scriptContent)
@@ -120,5 +140,36 @@ async function transformScript(node, ctx) {
             serialize(documentFragment),
         )
         return true
+    }
+}
+
+/**
+ * @param {string} src
+ * @param {string} ts
+ * @returns Promise<string>
+ */
+// todo tsconfig.json
+async function processTypeScript(src, ts) {
+    try {
+        const tsOutput = await esbuildTransform(ts, {
+            loader: 'ts',
+            platform: 'browser',
+        })
+        return tsOutput.code
+    } catch (e) {
+        throw new Error(`esbuild processing ${src}: ${e.message}`)
+    }
+}
+
+/**
+ * @param {TransformCtx} ctx
+ * @param {string} src
+ * @returns Promise<string>
+ */
+async function readFileContent(ctx, src) {
+    try {
+        return (await readFile(joinPath(ctx.root, src))).toString().trim()
+    } catch (e) {
+        throw new Error(`<script vite-inline> could not find src ${src}`)
     }
 }

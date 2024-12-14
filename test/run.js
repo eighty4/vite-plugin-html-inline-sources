@@ -16,12 +16,17 @@ const VITE_CONFIG = `
 `
 
 /**
+ * @typedef {Object} BuildOpts
+ * @property {Object<string, string>} files
+ */
+
+/**
+ * @param {BuildOpts} opts
  * @return {Promise.<BuildResult>}
  */
 export async function runViteBuild(opts) {
     if (!opts) throw new Error('opts is required')
     if (!opts.files || !Object.keys(opts.files).length) throw new Error('opts.files is required')
-    if (!opts.label) throw new Error('opts.label is required')
 
     // write opts.files to temp directory
     const LABEL = 'html-inline-sources-'
