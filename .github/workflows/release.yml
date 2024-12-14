@@ -47,7 +47,6 @@ jobs:
 
   verified:
     uses: ./.github/workflows/verify.yml
-    needs: [ check-build-params ]
 
   create-git-tag:
     name: create release tag
