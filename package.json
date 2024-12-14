@@ -21,6 +21,7 @@
     "test": "node --test 'test/**/*.spec.js'",
     "tsc": "tsc plugin.js --allowJs --moduleResolution NodeNext --module NodeNext"
   },
+  "packageManager": "pnpm@9.15.0",
   "dependencies": {
     "magic-string": "^0.30.15",
     "parse5": "^7.2.1"
