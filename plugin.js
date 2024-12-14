@@ -27,6 +27,10 @@ export default function htmlInlineSources() {
     }
 }
 
+/**
+ * @param {string} html
+ * @returns {import('parse5').DefaultTreeAdapterTypes.Document}
+ */
 function parseHtmlDocument(html) {
     try {
         return parse(html, {
