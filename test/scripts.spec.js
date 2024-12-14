@@ -8,16 +8,17 @@ describe('<script vite-inline>', () => {
         for (const src of ['/index.js', './index.js', 'index.js']) {
             const result = await runViteBuild({
                 files: {
-                    'index.html': `
-                    <html>
-                        <script vite-inline src="${src}"></script>
-                    </html>`,
+                    'index.html': `<html><script vite-inline src="${src}"></script></html>`,
                     'index.js': `console.log(location.search)`,
                 },
                 label: 'strip script vite-inline',
             })
             assert.ok(result.success, result.output)
-            assert.ok(await result.fromDistIncludes('index.html', '<script>console.log(location.search)</script>'), result.root)
+            assert.equal(
+                await result.fromDistContent('index.html'),
+                '<html><script>console.log(location.search)</script></html>',
+                result.root,
+            )
             await rm(result.root, {recursive: true})
         }
     })
@@ -27,9 +28,9 @@ describe('<script vite-inline>', () => {
             const result = await runViteBuild({
                 files: {
                     'index.html': `
-                    <html>
-                        <script vite-inline src="index.js" fetchpriority="high"></script>
-                    </html>`,
+                        <html>
+                            <script vite-inline src="index.js" fetchpriority="high"></script>
+                        </html>`,
                     'index.js': `console.log(location.search)`,
                 },
                 label: 'error for additional attributes',
@@ -41,10 +42,7 @@ describe('<script vite-inline>', () => {
         it('for missing src', async () => {
             const result = await runViteBuild({
                 files: {
-                    'index.html': `
-                    <html>
-                        <script vite-inline></script>
-                    </html>`,
+                    'index.html': '<html><script vite-inline></script></html>',
                 },
                 label: 'error for missing src',
             })
@@ -55,10 +53,7 @@ describe('<script vite-inline>', () => {
         it('for typescript src', async () => {
             const result = await runViteBuild({
                 files: {
-                    'index.html': `
-                    <html>
-                        <script vite-inline src="index.ts"></script>
-                    </html>`,
+                    'index.html': '<html><script vite-inline></script></html>',
                 },
                 label: 'error for typescript src',
             })
@@ -69,10 +64,7 @@ describe('<script vite-inline>', () => {
         it('for network src', async () => {
             const result = await runViteBuild({
                 files: {
-                    'index.html': `
-                    <html>
-                        <script vite-inline src="https://cdn.com/index.ts"></script>
-                    </html>`,
+                    'index.html': '<html><script vite-inline></script></html>',
                 },
                 label: 'error for network src',
             })
@@ -83,10 +75,7 @@ describe('<script vite-inline>', () => {
         it('for missing file', async () => {
             const result = await runViteBuild({
                 files: {
-                    'index.html': `
-                    <html>
-                        <script vite-inline src="index.js"></script>
-                    </html>`,
+                    'index.html': '<html><script vite-inline></script></html>',
                 },
                 label: 'error for network src',
             })

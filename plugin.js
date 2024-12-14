@@ -1,5 +1,6 @@
 import {readFile} from 'node:fs/promises'
 import {join as joinPath} from 'node:path'
+import MagicString from 'magic-string'
 import {defaultTreeAdapter, html, parse, serialize} from 'parse5'
 
 /**
@@ -18,10 +19,11 @@ export default function htmlInlineSources() {
                     onParseError,
                 })
                 const ctx = {
+                    html: new MagicString(src),
                     root: id.substring(0, id.lastIndexOf('/')),
                 }
                 if (await transform(doc, ctx)) {
-                    return serialize(doc)
+                    return ctx.html.toString()
                 }
             }
         },
@@ -42,6 +44,7 @@ function onParseError(err) {
 
 /**
  * @typedef {Object} TransformCtx
+ * @property {import('magic-string').default} html
  * @property {string} root
  *
  * @param {import('parse5').DefaultTreeAdapterTypes.Node} node
@@ -105,11 +108,17 @@ async function transformScript(node, ctx) {
     } else if (src.startsWith('http')) {
         throw new Error('vite-inline script src must be a relative path')
     } else {
-        const textContent = (await readFile(joinPath(ctx.root, src))).toString()
-        const inlined = defaultTreeAdapter.createElement('script', html.NS.HTML, [])
-        defaultTreeAdapter.appendChild(inlined, defaultTreeAdapter.createTextNode(textContent.trim()))
-        node.parentNode.childNodes.splice(node.parentNode.childNodes.indexOf(node), 1, inlined)
-        node.parentNode = null
+        const scriptContent = (await readFile(joinPath(ctx.root, src))).toString().trim()
+        const documentFragment = defaultTreeAdapter.createDocumentFragment()
+        const scriptElement = defaultTreeAdapter.createElement('script', html.NS.HTML, [])
+        const textNode = defaultTreeAdapter.createTextNode(scriptContent)
+        defaultTreeAdapter.appendChild(documentFragment, scriptElement)
+        defaultTreeAdapter.appendChild(scriptElement, textNode)
+        ctx.html.update(
+            node.sourceCodeLocation.startOffset,
+            node.sourceCodeLocation.endOffset,
+            serialize(documentFragment),
+        )
         return true
     }
 }

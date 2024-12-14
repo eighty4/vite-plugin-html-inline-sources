@@ -22,11 +22,12 @@
     "tsc": "tsc plugin.js --allowJs --moduleResolution NodeNext --module NodeNext"
   },
   "dependencies": {
+    "magic-string": "^0.30.15",
     "parse5": "^7.2.1"
   },
   "devDependencies": {
-    "vite": "^6.0.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
   },
   "files": [
     "package.json",
