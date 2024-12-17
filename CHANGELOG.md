@@ -1,5 +1,6 @@
 ## 0.0.3
 
+- inline css
 - inline ts with esbuild
 
 ## 0.0.2

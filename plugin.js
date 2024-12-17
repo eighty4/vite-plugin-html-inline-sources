@@ -68,17 +68,20 @@ function onParseError(err) {
  * @param {TransformCtx} ctx
  * @returns {Promise<boolean>}
  */
-// todo inline css
 // todo inline svg
 async function transform(node, ctx) {
     if (node.childNodes && node.childNodes.length) {
         return (
             await Promise.all(
-                node.childNodes.map((childNode) =>
-                    childNode.nodeName === 'script'
-                        ? transformScript(childNode, ctx)
-                        : transform(childNode, ctx),
-                ),
+                node.childNodes.map((childNode) => {
+                    if (childNode.nodeName === 'script') {
+                        return transformScript(childNode, ctx)
+                    } else if (childNode.nodeName === 'link') {
+                        return transformStyle(childNode, ctx)
+                    } else {
+                        return transform(childNode, ctx)
+                    }
+                }),
             )
         ).some(mutated => mutated)
     } else {
@@ -92,7 +95,6 @@ async function transform(node, ctx) {
  * @returns {Promise<boolean>}
  */
 // todo bundling imports
-// todo transpiling ts
 // todo minifying content
 async function transformScript(node, ctx) {
     let ignored = false
@@ -124,26 +126,30 @@ async function transformScript(node, ctx) {
     } else if (src === null) {
         throw new Error('<script vite-inline> is missing src attribute')
     } else if (src.startsWith('http')) {
-        throw new Error(`<script vite-inline> muse use a relative filesystem src path (network paths like ${src} are unsupported)`)
+        throw new Error(`<script vite-inline> must use a relative filesystem src path (network paths like ${src} are unsupported)`)
     } else {
         const filename = src.substring(src.lastIndexOf('/'))
         const extension = filename.substring(filename.lastIndexOf('.') + 1)
         if (!['js', 'mjs', 'ts'].includes(extension)) {
             throw new Error(`<script vite-inline> does not support src extension .${extension}`)
         }
-        const sourceContent = await readFileContent(ctx, src)
-        const scriptContent = extension === 'ts' ? await processTypeScript(src, sourceContent) : sourceContent
-        const documentFragment = defaultTreeAdapter.createDocumentFragment()
-        const scriptElement = defaultTreeAdapter.createElement('script', html.NS.HTML, [])
-        const textNode = defaultTreeAdapter.createTextNode(scriptContent)
-        defaultTreeAdapter.appendChild(documentFragment, scriptElement)
-        defaultTreeAdapter.appendChild(scriptElement, textNode)
-        ctx.html.update(
-            node.sourceCodeLocation.startOffset,
-            node.sourceCodeLocation.endOffset,
-            serialize(documentFragment),
-        )
+        updateInlinedHtml(ctx, node, createInlinedHtml('script', extension === 'ts'
+            ? await processTypeScript(src, await readScript(ctx, src))
+            : await readScript(ctx, src)))
         return true
+    }
+}
+
+/**
+ * @param {TransformCtx} ctx
+ * @param {string} src
+ * @returns Promise<string>
+ */
+async function readScript(ctx, src) {
+    try {
+        return await readFileContents(ctx, src)
+    } catch (e) {
+        throw new Error(`<script vite-inline> could not find src ${src}`)
     }
 }
 
@@ -166,14 +172,94 @@ async function processTypeScript(src, ts) {
 }
 
 /**
+ * @param {import('parse5').DefaultTreeAdapterTypes.ChildNode} node
+ * @param {TransformCtx} ctx
+ * @returns {Promise<boolean>}
+ */
+async function transformStyle(node, ctx) {
+    let ignored = false
+    let inline = false
+    /**
+     * @type {null|string}
+     */
+    let href = null
+    let stylesheet = false
+    for (const attr of node.attrs) {
+        switch (attr.name) {
+            case 'vite-inline':
+                inline = true
+                break
+            case 'rel':
+                if (attr.value === 'stylesheet') {
+                    stylesheet = true
+                }
+                break
+            case 'href':
+                href = attr.value
+                break
+            case 'vite-ignore':
+                ignored = true
+                break
+        }
+    }
+    if (!stylesheet || ignored || !inline) {
+        return false
+    } else if (href === null) {
+        throw new Error('<link rel="stylesheet" vite-inline> is missing href attribute')
+    } else if (href.startsWith('http')) {
+        throw new Error(`<link rel="stylesheet" vite-inline> must use a relative filesystem href path (network paths like ${href} are unsupported)`)
+    } else {
+        const filename = href.substring(href.lastIndexOf('/'))
+        const extension = filename.substring(filename.lastIndexOf('.') + 1)
+        if (extension !== 'css') {
+            throw new Error(`<link rel="stylesheet" vite-inline> href extension .${extension} isn't a valid value`)
+        }
+        /**
+         * @type {undefined|string}
+         */
+        let css
+        try {
+            css = await readFileContents(ctx, href)
+        } catch (e) {
+            throw new Error(`<link rel="stylesheet" vite-inline> could not find css file ${href}`)
+        }
+        updateInlinedHtml(ctx, node, createInlinedHtml('style', css))
+        return true
+    }
+}
+
+/**
  * @param {TransformCtx} ctx
  * @param {string} src
  * @returns Promise<string>
  */
-async function readFileContent(ctx, src) {
-    try {
-        return (await readFile(joinPath(ctx.root, src))).toString().trim()
-    } catch (e) {
-        throw new Error(`<script vite-inline> could not find src ${src}`)
-    }
+async function readFileContents(ctx, src) {
+    return (await readFile(joinPath(ctx.root, src))).toString().trim()
+}
+
+/**
+ * @param {string} tagName
+ * @param {string} textContent
+ * @returns string
+ */
+function createInlinedHtml(tagName, textContent) {
+    const documentFragment = defaultTreeAdapter.createDocumentFragment()
+    const styleElement = defaultTreeAdapter.createElement(tagName, html.NS.HTML, [])
+    const textNode = defaultTreeAdapter.createTextNode(textContent)
+    defaultTreeAdapter.appendChild(documentFragment, styleElement)
+    defaultTreeAdapter.appendChild(styleElement, textNode)
+    return serialize(documentFragment)
+}
+
+/**
+ * @param {TransformCtx} ctx
+ * @param {import('parse5').DefaultTreeAdapterTypes.ChildNode} node node
+ * @param {string} html
+ */
+function updateInlinedHtml(ctx, node, html) {
+    ctx.html.update(
+        node.sourceCodeLocation.startOffset,
+        node.sourceCodeLocation.endOffset,
+        html,
+    )
 }
