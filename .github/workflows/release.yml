@@ -109,11 +109,12 @@ jobs:
         with:
           fetch-tags: true
           ref: ${{needs.create-git-tag.outputs.version}}
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
           registry-url: https://registry.npmjs.org
-      - run: corepack enable && corepack prepare pnpm@latest --activate
       - name: publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
