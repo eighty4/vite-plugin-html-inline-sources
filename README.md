@@ -2,8 +2,15 @@
 
 A Vite plugin for inlining JS, CSS and SVG into `index.html` with a declarative `vite-inline` attribute.
 
-```js
-<script vite-inline src="index.js"></script>
+```html
+<!-- CSS -->
+<link vite-inline rel="stylesheet" href="index.css"/>
+
+<!-- JavaScript -->
+<script vite-inline type="module" src="index.js"></script>
+
+<!-- TypeScript -->
+<script vite-inline type="module" src="index.ts"></script>
 ```
 
 ## Why?
@@ -51,3 +58,27 @@ export default defineConfig(() => {
 </body>
 </html>
 ```
+
+### `vite-inline` behaviors
+
+#### <script vite-inline src="index.js">
+
+Without `type="module"` the script will be read from disk and inlined as-is.
+
+#### <script vite-inline src="index.js" type="module">
+
+JavaScript with `type="module"` will use `esbuild.build` and bundle all imports in the script output and the script tag
+will include the `type="module"` attribute.
+
+#### <script vite-inline src="index.ts">
+
+TypeScript inlining will use `esbuild.build` to bundle the script and any of its imports.
+
+_don't forget type="module" if you use top-level-await or any other ESM module features_
+
+#### <link vite-inline src="index.css">
+
+CSS will be inlined as-is with a read of the file from your project directory.
+
+Currently, nothing is done for `@import` within your CSS. Imported CSS could be bundled during inlining by using
+`lightningcss`.

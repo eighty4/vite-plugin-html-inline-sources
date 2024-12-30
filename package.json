@@ -18,20 +18,20 @@
   "main": "plugin.js",
   "types": "plugin.d.ts",
   "scripts": {
-    "check": "pnpm tsc --noEmit",
-    "gen:types": "pnpm tsc --declaration --emitDeclarationOnly --stripInternal --removeComments --outDir .",
-    "test": "node --test 'test/**/*.spec.js'",
-    "tsc": "tsc plugin.js --allowJs --moduleResolution NodeNext --module NodeNext"
+    "check": "pnpm internal:tsc --noEmit",
+    "gen:types": "pnpm internal:tsc --declaration --emitDeclarationOnly --stripInternal --removeComments --outDir .",
+    "internal:tsc": "tsc plugin.js --allowJs --moduleResolution NodeNext --module NodeNext",
+    "test": "node --test 'test/**/*.spec.js'"
   },
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@9.15.2",
   "dependencies": {
-    "esbuild": "^0.24.0",
-    "magic-string": "^0.30.15",
+    "esbuild": "^0.24.2",
+    "magic-string": "^0.30.17",
     "parse5": "^7.2.1"
   },
   "devDependencies": {
     "typescript": "^5.7.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.6"
   },
   "files": [
     "package.json",

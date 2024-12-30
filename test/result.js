@@ -1,4 +1,4 @@
-import {readFile} from 'node:fs/promises'
+import {readdir, readFile} from 'node:fs/promises'
 import {join as joinPath} from 'node:path'
 
 export default class BuildResult {
@@ -13,6 +13,13 @@ export default class BuildResult {
      */
     get error() {
         return !this.success
+    }
+
+    /**
+     * @returns {Promise<Array<string>>}
+     */
+    async distFiles() {
+        return readdir(joinPath(this.root, 'dist'))
     }
 
     /**

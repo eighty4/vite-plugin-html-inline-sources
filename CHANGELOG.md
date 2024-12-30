@@ -2,6 +2,7 @@
 
 - inline css
 - inline ts with esbuild
+- inline type="module" js with esbuild
 
 ## 0.0.2
 

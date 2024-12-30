@@ -18,6 +18,29 @@ describe('<script vite-inline>', () => {
                 '<html><script>console.log(location.search)</script></html>',
                 result.root,
             )
+            assert.deepStrictEqual(['index.html'], await result.distFiles(), result.root)
+            await rm(result.root, {recursive: true})
+        }
+    })
+
+    it('inlines javascript type="module"', async () => {
+        for (const src of ['/index.js', './index.js', 'index.js']) {
+            const result = await runViteBuild({
+                files: {
+                    'index.html': `<html><script vite-inline src="${src}" type="module"></script></html>`,
+                    'index.js': `import './delegate.js'`,
+                    'delegate.js': `console.log(location.search)`,
+                },
+            })
+            assert.ok(result.success, result.output)
+            assert.equal(
+                await result.fromDistContent('index.html'),
+                `<html><script  type="module">// delegate.js
+console.log(location.search);
+</script></html>`,
+                result.root,
+            )
+            assert.deepStrictEqual(['index.html'], await result.distFiles(), result.root)
             await rm(result.root, {recursive: true})
         }
     })
@@ -43,18 +66,46 @@ describe('<script vite-inline>', () => {
             assert.ok(result.success, result.output)
             assert.equal(
                 await result.fromDistContent('index.html'),
-                `<html><script>class Foo {
+                `<html><script>// index.ts
+var Foo = class {
   constructor(asdf) {
     this.asdf = asdf;
   }
   isAsdfy() {
     return !!this.asdf;
   }
-}
+};
 new Foo("0").isAsdfy();
 </script></html>`,
                 result.root,
             )
+            assert.deepStrictEqual(['index.html'], await result.distFiles(), result.root)
+            await rm(result.root, {recursive: true})
+        }
+    })
+
+    it('esbuild shakin\' the tree', async () => {
+        for (const src of ['/index.ts', './index.ts', 'index.ts']) {
+            const result = await runViteBuild({
+                files: {
+                    'index.html': `<html><script vite-inline src="${src}"></script></html>`,
+                    'index.ts': `
+                        import {getDeviceInfo} from './deviceInterface.js'
+                        console.log(getDeviceInfo())
+                    `,
+                    'deviceInterface.ts': `
+                        export function getDeviceInfo() {
+                            return 'google tv'
+                        }
+                        export function getDeviceVersion() {
+                            return '8675309'
+                        }
+                    `,
+                },
+            })
+            assert.ok(result.success, result.output)
+            assert.ok(await result.fromDistOmits('index.html', 'getDeviceVersion'), result.root)
+            assert.deepStrictEqual(['index.html'], await result.distFiles(), result.root)
             await rm(result.root, {recursive: true})
         }
     })
@@ -71,7 +122,22 @@ new Foo("0").isAsdfy();
                 },
             })
             assert.ok(result.error, result.output)
-            assert.ok(result.output.includes('<script vite-inline> does not work with fetchpriority attribute (and only supports the src attribute)'), result.output)
+            assert.ok(result.output.includes('<script vite-inline> does not work with fetchpriority attribute (and only supports the src and type="module" attributes)'), result.output)
+            await rm(result.root, {recursive: true})
+        })
+
+        it('for type="whatever" attribute', async () => {
+            const result = await runViteBuild({
+                files: {
+                    'index.html': `
+                        <html>
+                            <script vite-inline src="index.js" type="whatever"></script>
+                        </html>`,
+                    'index.js': `console.log(location.search)`,
+                },
+            })
+            assert.ok(result.error, result.output)
+            assert.ok(result.output.includes('<script vite-inline> does not work with type="whatever" attribute (and only supports the src and type="module" attributes)'), result.output)
             await rm(result.root, {recursive: true})
         })
 
@@ -131,85 +197,6 @@ new Foo("0").isAsdfy();
             await rm(result.root, {recursive: true})
         })
 
-        it('for parse5 error', async () => {
-            const result = await runViteBuild({
-                files: {
-                    'index.html': '<html><scripipt</html>',
-                },
-            })
-            assert.ok(result.error, result.output)
-            assert.ok(result.output.includes('parse5 HTML error: unexpected-solidus-in-tag'), result.output)
-            await rm(result.root, {recursive: true})
-        })
-    })
-})
-
-describe('<style rel="stylesheet" vite-inline>', () => {
-    it('inlines css', async () => {
-        const result = await runViteBuild({
-            files: {
-                'index.html': `<html><link vite-inline rel="stylesheet" href="lava_lamp.css"/></html>`,
-                'lava_lamp.css': `.wax-glob { color: #cfff04; }`,
-            },
-        })
-        assert.ok(result.success, result.output)
-        assert.equal(
-            await result.fromDistContent('index.html'),
-            '<html><style>.wax-glob { color: #cfff04; }</style></html>',
-            result.root,
-        )
-        await rm(result.root, {recursive: true})
-    })
-
-    describe('errors', () => {
-        it('for missing href', async () => {
-            const result = await runViteBuild({
-                files: {
-                    'index.html': '<html><link rel="stylesheet" vite-inline/></html>',
-                },
-            })
-            assert.ok(result.error, result.output)
-            assert.ok(result.output.includes('<link rel="stylesheet" vite-inline> is missing href attribute'), result.output)
-            await rm(result.root, {recursive: true})
-        })
-
-        it('for unsupported filetype', async () => {
-            const result = await runViteBuild({
-                files: {
-                    'index.html': '<html><link rel="stylesheet" vite-inline href="lava_lamp.gif"/></html>',
-                },
-            })
-            assert.ok(result.error, result.output)
-            assert.ok(result.output.includes('<link rel="stylesheet" vite-inline> href extension .gif isn\'t a valid value', result.output))
-            await rm(result.root, {recursive: true})
-        })
-
-        it('for network src', async () => {
-            const result = await runViteBuild({
-                files: {
-                    'index.html': '<html><link vite-inline rel="stylesheet" href="https://cdn/index.css"/></html>',
-                },
-            })
-            assert.ok(result.error, result.output)
-            assert.ok(result.output.includes('<link rel="stylesheet" vite-inline> must use a relative filesystem href path (network paths like https://cdn/index.css are unsupported)'), result.output)
-            await rm(result.root, {recursive: true})
-        })
-
-        it('for missing file', async () => {
-            const result = await runViteBuild({
-                files: {
-                    'index.html': '<html><link rel="stylesheet" href="strobe_light.css" vite-inline/></html>',
-                },
-            })
-            assert.ok(result.error, result.output)
-            assert.ok(result.output.includes('<link rel="stylesheet" vite-inline> could not find css file strobe_light.css'), result.output)
-            await rm(result.root, {recursive: true})
-        })
-    })
-})
-
-describe('html parsing', () => {
-    describe('errors', () => {
         it('for parse5 error', async () => {
             const result = await runViteBuild({
                 files: {

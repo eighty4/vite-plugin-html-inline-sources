@@ -1,6 +1,6 @@
 import {readFile} from 'node:fs/promises'
 import {join as joinPath} from 'node:path'
-import {transform as esbuildTransform} from 'esbuild'
+import esbuild from 'esbuild'
 import MagicString from 'magic-string'
 import {defaultTreeAdapter, html, parse, serialize} from 'parse5'
 
@@ -20,6 +20,7 @@ export default function htmlInlineSources() {
                     root: id.substring(0, id.lastIndexOf('/')),
                 }
                 if (await transform(doc, ctx)) {
+                    console.log(ctx.html.toString())
                     return ctx.html.toString()
                 }
             }
@@ -94,7 +95,6 @@ async function transform(node, ctx) {
  * @param {TransformCtx} ctx
  * @returns {Promise<boolean>}
  */
-// todo bundling imports
 // todo minifying content
 async function transformScript(node, ctx) {
     let ignored = false
@@ -103,6 +103,7 @@ async function transformScript(node, ctx) {
      * @type {null|string}
      */
     let src = null
+    let isModule = false
     let unsupportable = false
     for (const attr of node.attrs) {
         switch (attr.name) {
@@ -111,6 +112,13 @@ async function transformScript(node, ctx) {
                 break
             case 'src':
                 src = attr.value
+                break
+            case 'type':
+                if (attr.value === 'module') {
+                    isModule = true
+                } else {
+                    unsupportable = `type="${attr.value}"`
+                }
                 break
             case 'vite-ignore':
                 ignored = true
@@ -122,7 +130,7 @@ async function transformScript(node, ctx) {
     if (ignored || !inline) {
         return false
     } else if (unsupportable) {
-        throw new Error(`<script vite-inline> does not work with ${unsupportable} attribute (and only supports the src attribute)`)
+        throw new Error(`<script vite-inline> does not work with ${unsupportable} attribute (and only supports the src and type="module" attributes)`)
     } else if (src === null) {
         throw new Error('<script vite-inline> is missing src attribute')
     } else if (src.startsWith('http')) {
@@ -133,9 +141,13 @@ async function transformScript(node, ctx) {
         if (!['js', 'mjs', 'ts'].includes(extension)) {
             throw new Error(`<script vite-inline> does not support src extension .${extension}`)
         }
-        updateInlinedHtml(ctx, node, createInlinedHtml('script', extension === 'ts'
-            ? await processTypeScript(src, await readScript(ctx, src))
-            : await readScript(ctx, src)))
+        const attributes = []
+        if (isModule) {
+            // adding vite-ignore with type=module or script will be scooped by vite's asset bundling
+            attributes.push({name: 'vite-ignore', value: 'true'}, {name: 'type', value: 'module'})
+        }
+        const content = extension === 'ts' || isModule ? await processModule(ctx, src) : await readScript(ctx, src)
+        updateInlinedHtml(ctx, node, createInlinedHtml('script', attributes, content))
         return true
     }
 }
@@ -154,18 +166,21 @@ async function readScript(ctx, src) {
 }
 
 /**
+ * @param {TransformCtx} ctx
  * @param {string} src
- * @param {string} ts
  * @returns Promise<string>
  */
 // todo tsconfig.json
-async function processTypeScript(src, ts) {
+async function processModule(ctx, src) {
     try {
-        const tsOutput = await esbuildTransform(ts, {
-            loader: 'ts',
+        const buildResult = await esbuild.build({
+            bundle: true,
+            entryPoints: [joinPath(ctx.root, src)],
+            format: 'esm',
             platform: 'browser',
+            write: false,
         })
-        return tsOutput.code
+        return new TextDecoder().decode(buildResult.outputFiles[0].contents)
     } catch (e) {
         throw new Error(`esbuild processing ${src}: ${e.message}`)
     }
@@ -176,6 +191,7 @@ async function processTypeScript(src, ts) {
  * @param {TransformCtx} ctx
  * @returns {Promise<boolean>}
  */
+// todo bundle `@import`s in css
 async function transformStyle(node, ctx) {
     let ignored = false
     let inline = false
@@ -223,7 +239,7 @@ async function transformStyle(node, ctx) {
         } catch (e) {
             throw new Error(`<link rel="stylesheet" vite-inline> could not find css file ${href}`)
         }
-        updateInlinedHtml(ctx, node, createInlinedHtml('style', css))
+        updateInlinedHtml(ctx, node, createInlinedHtml('style', [], css))
         return true
     }
 }
@@ -239,12 +255,13 @@ async function readFileContents(ctx, src) {
 
 /**
  * @param {string} tagName
+ * @param {Array[{name: string, value: string}]} attributes
  * @param {string} textContent
  * @returns string
  */
-function createInlinedHtml(tagName, textContent) {
+function createInlinedHtml(tagName, attributes, textContent) {
     const documentFragment = defaultTreeAdapter.createDocumentFragment()
-    const styleElement = defaultTreeAdapter.createElement(tagName, html.NS.HTML, [])
+    const styleElement = defaultTreeAdapter.createElement(tagName, html.NS.HTML, attributes)
     const textNode = defaultTreeAdapter.createTextNode(textContent)
     defaultTreeAdapter.appendChild(documentFragment, styleElement)
     defaultTreeAdapter.appendChild(styleElement, textNode)
