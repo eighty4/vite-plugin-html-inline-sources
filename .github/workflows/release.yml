@@ -41,7 +41,7 @@ jobs:
           [[ $SEMVER_BUMP == "prerelease" ]] && exit 0
           git fetch --tags
           VERSION=$(npm version $SEMVER_BUMP --no-git-tag-version)
-          PRIOR_RELEASE_TAG=$(curl -s https://api.github.com/repos/eighty4/vite-plugin-html-inline-sources/releases | jq -r '.[] | select(.prerelease == false) | .tag_name')
+          PRIOR_RELEASE_TAG=$(curl -s https://api.github.com/repos/eighty4/vite-plugin-html-inline-sources/releases | jq -r '.[] | select(.prerelease == false) | .tag_name' | head -n 1)
           PRIOR_RELEASE_SHA=$(git rev-list -n 1 "$PRIOR_RELEASE_TAG")
           git diff $PRIOR_RELEASE_SHA -- CHANGELOG.md | grep "## $VERSION"
 
@@ -88,6 +88,7 @@ jobs:
           VERSION: ${{needs.create-git-tag.outputs.version}}
           GH_TOKEN: ${{ github.token }}
         run: |
+          NOTES=$(cat CHANGELOG.md | awk -v p="## 0.0.3" -F":" '$0 ~ p{f=1;next} /## /{f=0} f')
           CREATED_RELEASE=$(gh api \
             --method POST \
             -H "Accept: application/vnd.github+json" \
@@ -95,7 +96,7 @@ jobs:
             /repos/eighty4/vite-plugin-html-inline-sources/releases \
             -f tag_name="$VERSION" \
             -f name="$VERSION" \
-            -f body="$VERSION release" \
+            -F body="# Release notes\r\n\r\n$NOTES\r\n\r\n[Published to npm](https://www.npmjs.com/package/vite-plugin-html-inline-sources)" \
             -F draft=false \
             -F prerelease=$PRERELEASE \
             -F generate_release_notes=false)
