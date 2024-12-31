@@ -88,7 +88,7 @@ jobs:
           VERSION: ${{needs.create-git-tag.outputs.version}}
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES=$(cat CHANGELOG.md | awk -v p="## 0.0.3" -F":" '$0 ~ p{f=1;next} /## /{f=0} f')
+          NOTES=$(cat CHANGELOG.md | awk -v p="## $VERSION" -F":" '$0 ~ p{f=1;next} /## /{f=0} f')
           CREATED_RELEASE=$(gh api \
             --method POST \
             -H "Accept: application/vnd.github+json" \
@@ -96,7 +96,7 @@ jobs:
             /repos/eighty4/vite-plugin-html-inline-sources/releases \
             -f tag_name="$VERSION" \
             -f name="$VERSION" \
-            -F body="# Release notes\r\n\r\n$NOTES\r\n\r\n[Published to npm](https://www.npmjs.com/package/vite-plugin-html-inline-sources)" \
+            -f body="# Release notes\r\n\r\n$NOTES\r\n\r\n[Published to npm](https://www.npmjs.com/package/vite-plugin-html-inline-sources)" \
             -F draft=false \
             -F prerelease=$PRERELEASE \
             -F generate_release_notes=false)
