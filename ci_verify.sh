@@ -21,6 +21,35 @@ for arg in "$@"; do
   esac
 done
 
+# validate local github workflow changes on commit or ./ci_verify.sh
+
+validate_gh_wf_if_changed() {
+    _changes=$(git status)
+    if echo "$_changes" | grep -Eq "\.github/workflows/.*?\.ya?ml"; then
+        model-t .
+    fi
+}
+
+if [ "$0" = ".git/hooks/pre-commit" ]; then
+    validate_gh_wf_if_changed
+fi
+
+if echo "$0" | grep -q "ci_verify\.sh$"; then
+    validate_gh_wf_if_changed
+fi
+
+# validate committed github workflow changes on push
+
+if [ "$0" = ".git/hooks/pre-push" ]; then
+    read -a _input
+    _changes=$(git diff --name-only ${_input[1]} ${_input[3]})
+    if echo "$_changes" | grep -Eq "^\.github/workflows/.*?\.ya?ml$"; then
+        model-t .
+    fi
+fi
+
+# verify env has build tool dependencies
+
 if ! command -v "pnpm" &> /dev/null; then
   _url="https://pnpm.io/installation"
   echo "\033[31merror:\033[0m pnpm is required for contributing\n\n  $_url\n"
