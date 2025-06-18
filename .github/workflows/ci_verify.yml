@@ -1,5 +1,5 @@
 name: Verify CI
-ref-name: Verify ${{ github.ref_name }}
+run-name: Verify ${{ github.ref_name }}
 
 on:
   workflow_call:
