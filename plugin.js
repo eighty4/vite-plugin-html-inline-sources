@@ -20,7 +20,6 @@ export default function htmlInlineSources() {
                     root: id.substring(0, id.lastIndexOf('/')),
                 }
                 if (await transform(doc, ctx)) {
-                    console.log(ctx.html.toString())
                     return ctx.html.toString()
                 }
             }
