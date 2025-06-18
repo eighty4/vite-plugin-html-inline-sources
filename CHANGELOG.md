@@ -2,10 +2,6 @@
 
 ## [Unreleased]
 
-- ???
-
-## [v0.0.4-0] - 2025-06-18
-
 - minify JS with esbuild
 - use `vite-inline="-minify"` to opt out of minifying
 
