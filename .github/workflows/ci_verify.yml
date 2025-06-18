@@ -4,21 +4,21 @@ run-name: Verify ${{ github.ref_name }}
 on:
   workflow_call:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-
   verified:
     runs-on: ubuntu-latest
     needs:
-      - check
+      - fmtcheck
       - test
+      - typecheck
     steps:
       - run: echo "Code of Federal Regulations subparts B of 10 CFR 433 and 10 CFR 435"
 
-  check:
+  typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +30,21 @@ jobs:
       - name: pnpm i
         run: pnpm i
       - name: tsc
-        run: pnpm check
+        run: pnpm typecheck
+
+  fmtcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: pnpm
+      - name: pnpm i
+        run: pnpm i
+      - name: prettier
+        run: pnpm fmtcheck
 
   test:
     runs-on: ubuntu-latest

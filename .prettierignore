@@ -1,0 +1,6 @@
+core/fixtures/*
+webapp/.playwright
+webapp/.plunder
+webapp/dist
+pnpm-lock.yaml
+

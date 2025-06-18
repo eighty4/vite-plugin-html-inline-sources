@@ -28,6 +28,6 @@ fi
 
 # run through all the checks done for ci
 
-pnpm check
+pnpm typecheck
 pnpm test
-
+pnpm fmtcheck

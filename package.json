@@ -18,10 +18,12 @@
   "main": "plugin.js",
   "types": "plugin.d.ts",
   "scripts": {
-    "check": "pnpm internal:tsc --noEmit",
+    "fmt": "prettier --write .",
+    "fmtcheck": "prettier --check .",
     "gen:types": "pnpm internal:tsc --declaration --emitDeclarationOnly --stripInternal --removeComments --outDir .",
     "internal:tsc": "tsc plugin.js --allowJs --moduleResolution NodeNext --module NodeNext",
-    "test": "node --test 'test/**/*.spec.js'"
+    "test": "node --test 'test/**/*.spec.js'",
+    "typecheck": "pnpm internal:tsc --noEmit"
   },
   "packageManager": "pnpm@9.15.2",
   "dependencies": {
@@ -30,6 +32,7 @@
     "parse5": "^7.2.1"
   },
   "devDependencies": {
+    "prettier": "^3.5.3",
     "typescript": "^5.7.2",
     "vite": "^6.0.6"
   },

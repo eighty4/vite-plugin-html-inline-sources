@@ -21,7 +21,6 @@ env:
   SEMVER_BUMP: ${{inputs.semver-bump}}
 
 jobs:
-
   check-build-params:
     runs-on: ubuntu-latest
     outputs:
@@ -43,7 +42,7 @@ jobs:
   create-git-tag:
     name: create release tag
     runs-on: ubuntu-latest
-    needs: [ check-build-params, verified ]
+    needs: [check-build-params, verified]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -72,7 +71,7 @@ jobs:
 
   npm-publish:
     name: publish to npm
-    needs: [ check-build-params, create-git-tag ]
+    needs: [check-build-params, create-git-tag]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

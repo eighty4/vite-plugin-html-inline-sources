@@ -1,8 +1,8 @@
-import {readFile} from 'node:fs/promises'
-import {join as joinPath} from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { join as joinPath } from 'node:path'
 import esbuild from 'esbuild'
 import MagicString from 'magic-string'
-import {defaultTreeAdapter, html, parse, serialize} from 'parse5'
+import { defaultTreeAdapter, html, parse, serialize } from 'parse5'
 
 /**
  * @returns {import('vite').Plugin}
@@ -73,7 +73,7 @@ async function transform(node, ctx) {
     if (node.childNodes && node.childNodes.length) {
         return (
             await Promise.all(
-                node.childNodes.map((childNode) => {
+                node.childNodes.map(childNode => {
                     if (childNode.nodeName === 'script') {
                         return transformScript(childNode, ctx)
                     } else if (childNode.nodeName === 'link') {
@@ -120,7 +120,9 @@ async function transformScript(node, ctx) {
                                 minify = true
                                 break
                             default:
-                                throw new Error(`<script vite-inline="${inlineFlag}"> is an unknown vite-inline flag`)
+                                throw new Error(
+                                    `<script vite-inline="${inlineFlag}"> is an unknown vite-inline flag`,
+                                )
                         }
                     }
                 }
@@ -145,21 +147,33 @@ async function transformScript(node, ctx) {
     if (ignored || !inline) {
         return false
     } else if (unsupportable) {
-        throw new Error(`<script vite-inline> does not work with ${unsupportable} attribute (and only supports the src and type="module" attributes)`)
+        throw new Error(
+            `<script vite-inline> does not work with ${unsupportable} attribute (and only supports the src and type="module" attributes)`,
+        )
     } else if (src === null) {
         throw new Error('<script vite-inline> is missing src attribute')
     } else if (src.startsWith('http')) {
-        throw new Error(`<script vite-inline> must use a relative filesystem src path (network paths like ${src} are unsupported)`)
+        throw new Error(
+            `<script vite-inline> must use a relative filesystem src path (network paths like ${src} are unsupported)`,
+        )
     } else {
         const filename = src.substring(src.lastIndexOf('/'))
         const extension = filename.substring(filename.lastIndexOf('.') + 1)
         if (!['js', 'mjs', 'ts'].includes(extension)) {
-            throw new Error(`<script vite-inline> does not support src extension .${extension}`)
+            throw new Error(
+                `<script vite-inline> does not support src extension .${extension}`,
+            )
         }
         const attributes = []
         const useEsbuild = extension === 'ts' || isModule || minify
-        const content = useEsbuild ? await processModule(ctx, src, minify) : await readScript(ctx, src)
-        updateInlinedHtml(ctx, node, createInlinedHtml('script', attributes, content))
+        const content = useEsbuild
+            ? await processModule(ctx, src, minify)
+            : await readScript(ctx, src)
+        updateInlinedHtml(
+            ctx,
+            node,
+            createInlinedHtml('script', attributes, content),
+        )
         return true
     }
 }
@@ -194,7 +208,9 @@ async function processModule(ctx, src, minify) {
             platform: 'browser',
             write: false,
         })
-        return new TextDecoder().decode(buildResult.outputFiles[0].contents).trim()
+        return new TextDecoder()
+            .decode(buildResult.outputFiles[0].contents)
+            .trim()
     } catch (e) {
         throw new Error(`esbuild processing ${src}: ${e.message}`)
     }
@@ -235,14 +251,20 @@ async function transformStyle(node, ctx) {
     if (!stylesheet || ignored || !inline) {
         return false
     } else if (href === null) {
-        throw new Error('<link rel="stylesheet" vite-inline> is missing href attribute')
+        throw new Error(
+            '<link rel="stylesheet" vite-inline> is missing href attribute',
+        )
     } else if (href.startsWith('http')) {
-        throw new Error(`<link rel="stylesheet" vite-inline> must use a relative filesystem href path (network paths like ${href} are unsupported)`)
+        throw new Error(
+            `<link rel="stylesheet" vite-inline> must use a relative filesystem href path (network paths like ${href} are unsupported)`,
+        )
     } else {
         const filename = href.substring(href.lastIndexOf('/'))
         const extension = filename.substring(filename.lastIndexOf('.') + 1)
         if (extension !== 'css') {
-            throw new Error(`<link rel="stylesheet" vite-inline> href extension .${extension} isn't a valid value`)
+            throw new Error(
+                `<link rel="stylesheet" vite-inline> href extension .${extension} isn't a valid value`,
+            )
         }
         /**
          * @type {undefined|string}
@@ -251,7 +273,9 @@ async function transformStyle(node, ctx) {
         try {
             css = await readFileContents(ctx, href)
         } catch (e) {
-            throw new Error(`<link rel="stylesheet" vite-inline> could not find css file ${href}`)
+            throw new Error(
+                `<link rel="stylesheet" vite-inline> could not find css file ${href}`,
+            )
         }
         updateInlinedHtml(ctx, node, createInlinedHtml('style', [], css))
         return true
@@ -275,7 +299,11 @@ async function readFileContents(ctx, src) {
  */
 function createInlinedHtml(tagName, attributes, textContent) {
     const documentFragment = defaultTreeAdapter.createDocumentFragment()
-    const styleElement = defaultTreeAdapter.createElement(tagName, html.NS.HTML, attributes)
+    const styleElement = defaultTreeAdapter.createElement(
+        tagName,
+        html.NS.HTML,
+        attributes,
+    )
     const textNode = defaultTreeAdapter.createTextNode(textContent)
     defaultTreeAdapter.appendChild(documentFragment, styleElement)
     defaultTreeAdapter.appendChild(styleElement, textNode)

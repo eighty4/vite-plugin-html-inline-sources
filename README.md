@@ -4,7 +4,7 @@ A Vite plugin for inlining JS, CSS and SVG into `index.html` with a declarative 
 
 ```html
 <!-- CSS -->
-<link vite-inline rel="stylesheet" href="index.css"/>
+<link vite-inline rel="stylesheet" href="index.css" />
 
 <!-- JavaScript -->
 <script vite-inline type="module" src="index.js"></script>
@@ -15,15 +15,15 @@ A Vite plugin for inlining JS, CSS and SVG into `index.html` with a declarative 
 
 ## Why?
 
-Performance gains from bundling JS and CSS sources in HTML are *extreme* and _visible_ to users immediately on page load.
+Performance gains from bundling JS and CSS sources in HTML are _extreme_ and _visible_ to users immediately on page load.
 
 This plugin should be used for code that applies custom theming, fonts, dark mode and CSS that curbs awkward
-[flash of unstyled content](https://en.wikipedia.org/wiki/Flash_of_unstyled_content) 
+[flash of unstyled content](https://en.wikipedia.org/wiki/Flash_of_unstyled_content)
 before any network requests for CSS complete.
 
 ### Alternative approaches
 
-There are Vite plugins for inlining sources in HTML that focus on inlining *all* sources into a single file.
+There are Vite plugins for inlining sources in HTML that focus on inlining _all_ sources into a single file.
 Plugins that make HTML files without external dependencies are useful for embedded systems and
 mobile apps. Check out
 [vite-plugin-singlefile](https://www.npmjs.com/package/vite-plugin-singlefile) for those use cases.
@@ -39,12 +39,12 @@ pnpm i -D vite-plugin-html-inline-sources
 ### vite.config.js
 
 ```js
-import {defineConfig} from 'vite'
+import { defineConfig } from 'vite'
 import inlining from 'vite-plugin-html-inline-sources'
 
 export default defineConfig(() => {
     return {
-        plugins: [inlining()]
+        plugins: [inlining()],
     }
 })
 ```
@@ -53,9 +53,9 @@ export default defineConfig(() => {
 
 ```html
 <html lang="en">
-<body>
-    <script vite-inline src="index.ts"></script>
-</body>
+    <body>
+        <script vite-inline src="index.ts"></script>
+    </body>
 </html>
 ```
 

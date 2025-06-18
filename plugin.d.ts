@@ -1,1 +1,1 @@
-export default function htmlInlineSources(): import('vite').Plugin;
+export default function htmlInlineSources(): import('vite').Plugin

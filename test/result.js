@@ -1,5 +1,5 @@
-import {readdir, readFile} from 'node:fs/promises'
-import {join as joinPath} from 'node:path'
+import { readdir, readFile } from 'node:fs/promises'
+import { join as joinPath } from 'node:path'
 
 export default class BuildResult {
     constructor(root, output, success) {
@@ -27,7 +27,9 @@ export default class BuildResult {
      * @returns {Promise<string>}
      */
     async fromDistContent(filename) {
-        return (await readFile(joinPath(this.root, 'dist', filename))).toString()
+        return (
+            await readFile(joinPath(this.root, 'dist', filename))
+        ).toString()
     }
 
     /**
@@ -47,7 +49,7 @@ export default class BuildResult {
     async fromDistOmits(filename, searchString) {
         return !(await this.fromDistIncludes(filename, searchString))
     }
-    
+
     /**
      * @param {string} filename
      * @params {RegExp} pattern
