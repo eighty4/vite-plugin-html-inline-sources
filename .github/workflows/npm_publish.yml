@@ -58,14 +58,14 @@ jobs:
           echo "git-tag=$GIT_TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - if: inputs.semver-bump != 'prerelease'
-        run: npx --yes @eighty4/changelog rollover
+        run: npx --yes @eighty4/changelog rollover ${{ steps.semver.outputs.git-tag }}
       - env:
           GIT_TAG: ${{ steps.semver.outputs.git-tag }}
           NPM_TAG: ${{ needs.build-params.outputs.npm-tag }}
         run: |
           git config --global user.name "Adam McKee"
           git config --global user.email "adam.be.g84d@gmail.com"
-          git commit -am "publish $GIT_TAG to npm as \"@$NPM_TAG\""
+          git commit -am "publish $GIT_TAG to npm as @$NPM_TAG"
           git tag $GIT_TAG
           git push --atomic origin main $GIT_TAG
     outputs:
