@@ -53,6 +53,9 @@ export default defineConfig(() => {
 
 ```html
 <html lang="en">
+    <head>
+        <link vite-inline src="index.css" />
+    </head>
     <body>
         <script vite-inline src="index.ts"></script>
     </body>
@@ -61,25 +64,33 @@ export default defineConfig(() => {
 
 ### `vite-inline` for JavaScript
 
-#### <script vite-inline src="index.[js|ts]">
+```html
+<script vite-inline src="index.[js|ts]">
+```
 
 The default behavior of `vite-inline` is to transform TypeScript to JavaScript
 and to minify sources. This process is done with `esbuild.build`.
 
-#### <script vite-inline="-minify" src="index.[js|ts]">
+```html
+<script vite-inline="-minify" src="index.[js|ts]">
+```
 
 To opt out of minifying, use a `-minify` value for `vite-inline`.
 
 With minifying disabled and without `type=module` or a TypeScript source,
 the inlined script will be read from disk and inlined as-is.
 
-#### <script vite-inline type="module" src="index.[js|ts]">
+```html
+<script vite-inline type="module" src="index.[js|ts]">
+```
 
 _don't forget type="module" if you use top-level-await or any other ESM module features_
 
 ### `vite-inline` for CSS
 
-#### <link vite-inline src="index.css">
+```html
+<link vite-inline src="index.css" />
+```
 
 CSS will be inlined as-is with a read of the file from your project directory.
 
