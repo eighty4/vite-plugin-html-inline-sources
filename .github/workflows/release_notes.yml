@@ -1,0 +1,52 @@
+name: Create release notes
+run-name: Create ${{ inputs.git_tag }} release notes
+
+on:
+  workflow_call:
+    inputs:
+      npm_version:
+        type: string
+        required: true
+      git_tag:
+        type: string
+        required: true
+      prerelease:
+        type: boolean
+        default: false
+    outputs:
+      notes:
+        value: ${{ jobs.create.outputs.notes }}
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    outputs:
+      notes: ${{ steps.notes.outputs.notes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          ref: ${{ inputs.git_tag }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+      - run: npm i -g @eighty4/changelog
+      - id: notes
+        env:
+          CHANGELOG_TAG: ${{ inputs.prerelease && 'Unreleased' || format('v{0}', inputs.npm_version) }}
+          NPM_TAG: ${{ inputs.prerelease && '@next' || '' }}
+          NPM_VERSION: ${{ inputs.npm_version }}
+        run: |
+          PKG_NAME=$(cat package.json | jq -r ".name")
+          echo "#### Published to npm as [$PKG_NAME](https://www.npmjs.com/package/$PKG_NAME/v/$NPM_VERSION)" >> release_notes.md
+          echo >> release_notes.md
+          echo "\`\`\`npm i -g $PKG_NAME$NPM_TAG\`\`\`" >> release_notes.md
+          echo >> release_notes.md
+
+          echo "## Release notes" >> release_notes.md
+          echo >> release_notes.md
+          changelog get "$CHANGELOG_TAG" >> release_notes.md
+          echo >> release_notes.md
+
+          RELEASE_NOTES=$(cat release_notes.md | base64 -w 0)
+          echo "notes=$RELEASE_NOTES" >> "$GITHUB_OUTPUT"
