@@ -94,7 +94,7 @@ jobs:
         run: pnpm publish --access public --tag $NPM_TAG --no-git-checks
 
   release-notes:
-    needs: [build-params, git-tag]
+    needs: [build-params, git-tag, npm-publish]
     uses: ./.github/workflows/release_notes.yml
     with:
       git_tag: ${{ needs.git-tag.outputs.git-tag }}
