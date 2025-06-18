@@ -59,26 +59,29 @@ export default defineConfig(() => {
 </html>
 ```
 
-### `vite-inline` behaviors
+### `vite-inline` for JavaScript
 
-#### <script vite-inline src="index.js">
+#### <script vite-inline src="index.[js|ts]">
 
-Without `type="module"` the script will be read from disk and inlined as-is.
+The default behavior of `vite-inline` is to transform TypeScript to JavaScript
+and to minify sources. This process is done with `esbuild.build`.
 
-#### <script vite-inline src="index.js" type="module">
+#### <script vite-inline="-minify" src="index.[js|ts]">
 
-JavaScript with `type="module"` will use `esbuild.build` and bundle all imports in the script output and the script tag
-will include the `type="module"` attribute.
+To opt out of minifying, use a `-minify` value for `vite-inline`.
 
-#### <script vite-inline src="index.ts">
+With minifying disabled and without `type=module` or a TypeScript source,
+the inlined script will be read from disk and inlined as-is.
 
-TypeScript inlining will use `esbuild.build` to bundle the script and any of its imports.
+#### <script vite-inline type="module" src="index.[js|ts]">
 
 _don't forget type="module" if you use top-level-await or any other ESM module features_
+
+### `vite-inline` for CSS
 
 #### <link vite-inline src="index.css">
 
 CSS will be inlined as-is with a read of the file from your project directory.
 
-Currently, nothing is done for `@import` within your CSS. Imported CSS could be bundled during inlining by using
-`lightningcss`.
+Currently, nothing is done to minify CSS or support `@import` within your CSS.
+`lightningcss` could provide support for both features.

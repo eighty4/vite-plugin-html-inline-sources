@@ -104,10 +104,26 @@ async function transformScript(node, ctx) {
     let src = null
     let isModule = false
     let unsupportable = false
+    let minify = true
     for (const attr of node.attrs) {
         switch (attr.name) {
             case 'vite-inline':
-                inline = true
+                inline = attr.value !== 'false'
+                if (attr.value.length && attr.value !== 'true') {
+                    for (const inlineFlag of attr.value.split(/\s+/)) {
+                        switch (inlineFlag) {
+                            case '-minify':
+                                minify = false
+                                break
+                            case '+minify':
+                            case 'minify':
+                                minify = true
+                                break
+                            default:
+                                throw new Error(`<script vite-inline="${inlineFlag}"> is an unknown vite-inline flag`)
+                        }
+                    }
+                }
                 break
             case 'src':
                 src = attr.value
@@ -141,11 +157,8 @@ async function transformScript(node, ctx) {
             throw new Error(`<script vite-inline> does not support src extension .${extension}`)
         }
         const attributes = []
-        if (isModule) {
-            // adding vite-ignore with type=module or script will be scooped by vite's asset bundling
-            attributes.push({name: 'vite-ignore', value: 'true'}, {name: 'type', value: 'module'})
-        }
-        const content = extension === 'ts' || isModule ? await processModule(ctx, src) : await readScript(ctx, src)
+        const useEsbuild = extension === 'ts' || isModule || minify
+        const content = useEsbuild ? await processModule(ctx, src, minify) : await readScript(ctx, src)
         updateInlinedHtml(ctx, node, createInlinedHtml('script', attributes, content))
         return true
     }
@@ -167,19 +180,21 @@ async function readScript(ctx, src) {
 /**
  * @param {TransformCtx} ctx
  * @param {string} src
+ * @param {boolean} minify
  * @returns Promise<string>
  */
 // todo tsconfig.json
-async function processModule(ctx, src) {
+async function processModule(ctx, src, minify) {
     try {
         const buildResult = await esbuild.build({
             bundle: true,
+            minify,
             entryPoints: [joinPath(ctx.root, src)],
             format: 'esm',
             platform: 'browser',
             write: false,
         })
-        return new TextDecoder().decode(buildResult.outputFiles[0].contents)
+        return new TextDecoder().decode(buildResult.outputFiles[0].contents).trim()
     } catch (e) {
         throw new Error(`esbuild processing ${src}: ${e.message}`)
     }

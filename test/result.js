@@ -47,4 +47,13 @@ export default class BuildResult {
     async fromDistOmits(filename, searchString) {
         return !(await this.fromDistIncludes(filename, searchString))
     }
+    
+    /**
+     * @param {string} filename
+     * @params {RegExp} pattern
+     * @returns {Promise<boolean>}
+     */
+    async fromDistTest(filename, pattern) {
+        return pattern.test(await this.fromDistContent(filename))
+    }
 }

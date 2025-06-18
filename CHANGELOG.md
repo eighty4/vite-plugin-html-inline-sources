@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- minify JS with esbuild
+- use `vite-inline="-minify"` to opt out of minifying
+
 ## [v0.0.3] - 2024-12-31
 
 - inline css
