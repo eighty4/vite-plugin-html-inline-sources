@@ -99,7 +99,7 @@ jobs:
     with:
       git_tag: ${{ needs.git-tag.outputs.git-tag }}
       npm_version: ${{ needs.git-tag.outputs.version }}
-      prerelease: ${{ needs.build-params.outputs.prerelease }}
+      prerelease: ${{ needs.build-params.outputs.prerelease == 'true' }}
 
   gh-release:
     needs:

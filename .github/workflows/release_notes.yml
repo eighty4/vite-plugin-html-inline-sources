@@ -34,7 +34,7 @@ jobs:
       - id: notes
         env:
           CHANGELOG_TAG: ${{ inputs.prerelease && 'Unreleased' || format('v{0}', inputs.npm_version) }}
-          NPM_TAG: ${{ inputs.prerelease && '@next' || '' }}
+          NPM_TAG: ${{ inputs.prerelease && format('@{0}', inputs.npm_version) || '@latest' }}
           NPM_VERSION: ${{ inputs.npm_version }}
         run: |
           PKG_NAME=$(cat package.json | jq -r ".name")
