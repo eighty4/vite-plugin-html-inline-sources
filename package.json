@@ -37,6 +37,7 @@
     "vite": "^6.0.6"
   },
   "files": [
+    "CHANGELOG.md",
     "package.json",
     "plugin.d.ts",
     "plugin.js",
