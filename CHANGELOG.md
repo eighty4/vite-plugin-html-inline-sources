@@ -19,8 +19,7 @@
 
 - inline js in index.html
 
-[Unreleased]: https://github.com/eighty4/vite-plugin-html-inline-sources/compare/v0.0.4-0...HEAD
-[v0.0.4-0]: https://github.com/eighty4/vite-plugin-html-inline-sources/compare/v0.0.3...v0.0.4-0
+[Unreleased]: https://github.com/eighty4/vite-plugin-html-inline-sources/compare/v0.0.3...HEAD
 [v0.0.3]: https://github.com/eighty4/vite-plugin-html-inline-sources/compare/v0.0.2...v0.0.3
 [v0.0.2]: https://github.com/eighty4/vite-plugin-html-inline-sources/compare/v0.0.1...v0.0.2
 [v0.0.1]: https://github.com/eighty4/vite-plugin-html-inline-sources/releases/tag/v0.0.1
